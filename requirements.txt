@@ -1,6 +1,2 @@
-Flask
-Flask-SQLAlchemy
-Flask-Migrate
-Flask-WTF
-Flask-Login
-gunicorn
+flask==3.0.2
+gunicorn==21.2.0

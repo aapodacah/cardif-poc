@@ -1,74 +1,49 @@
-# Flask Web Application
+# Cardif POC
 
-This is a simple web application built using Flask, a lightweight WSGI web application framework in Python. The application demonstrates basic features such as routing, templates, and static file handling.
+## Azure Credentials Setup
 
-## Project Structure
+To deploy this application, you need to set up Azure credentials in your GitHub repository secrets. Follow these steps:
 
-```
-flask-web-app
-├── app
-│   ├── __init__.py          # Initializes the Flask application
-│   ├── routes.py            # Defines the application routes
-│   ├── models.py            # Contains data models
-│   ├── static
-│   │   └── styles.css       # CSS styles for the application
-│   └── templates
-│       ├── base.html        # Base HTML template
-│       ├── index.html       # Main landing page
-│       └── about.html       # About page
-├── tests
-│   └── test_app.py          # Unit tests for the application
-├── .gitignore                # Specifies files to ignore in version control
-├── requirements.txt          # Lists project dependencies
-├── config.py                 # Configuration settings for the application
-├── run.py                    # Entry point for running the application
-└── README.md                 # Project documentation
+1. Install the Azure CLI and login:
+```bash
+az login
 ```
 
-## Installation
-
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   cd flask-web-app
-   ```
-
-2. Create a virtual environment:
-   ```
-   python -m venv venv
-   ```
-
-3. Activate the virtual environment:
-   - On Windows:
-     ```
-     venv\Scripts\activate
-     ```
-   - On macOS/Linux:
-     ```
-     source venv/bin/activate
-     ```
-
-4. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-## Running the Application
-
-To run the application, execute the following command:
-```
-python run.py
+2. Create a service principal and get the credentials:
+```bash
+az ad sp create-for-rbac --name "cardif-poc-sp" --role contributor \
+                         --scopes /subscriptions/<subscription-id> \
+                         --sdk-auth
 ```
 
-The application will be accessible at `http://127.0.0.1:5000`.
-
-## Testing
-
-To run the tests, use the following command:
+This command will output JSON similar to:
+```json
+{
+  "clientId": "<client-id>",
+  "clientSecret": "<client-secret>",
+  "subscriptionId": "<subscription-id>",
+  "tenantId": "<tenant-id>",
+  ...
+}
 ```
-python -m unittest discover -s tests
+
+3. In your GitHub repository:
+   - Go to Settings > Secrets and variables > Actions
+   - Click "New repository secret"
+   - Name: AZURE_CREDENTIALS
+   - Value: Paste the entire JSON output from the previous step
+
+## Azure Container Registry Credentials
+
+After Terraform creates the Azure Container Registry, you'll need to set up these additional secrets:
+
+1. Get the ACR credentials:
+```bash
+az acr credential show --name cardifpocacr --resource-group cardif-poc-RG
 ```
 
-## License
+2. Add these secrets to your GitHub repository:
+   - ACR_USERNAME: The username from the ACR credentials (usually the registry name)
+   - ACR_PASSWORD: One of the passwords from the ACR credentials
 
-This project is licensed under the MIT License.
+These credentials will allow the GitHub Actions workflow to push images to your Azure Container Registry.
