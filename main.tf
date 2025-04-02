@@ -45,10 +45,7 @@ resource "azurerm_linux_web_app" "app" {
   service_plan_id    = azurerm_service_plan.app_service_plan.id
 
   site_config {
-    application_stack {
-      docker_image     = "${azurerm_container_registry.acr.login_server}/${var.app_name}"
-      docker_image_tag = "latest"
-    }
+    linux_fx_version = "DOCKER|${azurerm_container_registry.acr.login_server}/${var.app_name}:latest"
   }
 
   identity {
