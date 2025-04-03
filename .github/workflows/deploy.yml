@@ -15,7 +15,7 @@ jobs:
 
     - name: Install IBM Cloud CLI
       run: |
-        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh ###curl -fsSL https://clas.ibm.com/install/linux | sh
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
         ibmcloud plugin install container-registry
         ibmcloud plugin install code-engine
 
@@ -27,7 +27,6 @@ jobs:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: terraform init
 
-###añadido manualmente
     - name: Terraform Plan
       env:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
@@ -43,8 +42,10 @@ jobs:
       env:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: |
-        echo "resource_group=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
-        echo "namespace=$(terraform output -raw container_registry_namespace)" >> $GITHUB_OUTPUT
+        RESOURCE_GROUP=$(terraform output -raw resource_group_name | tr -d '\n')
+        NAMESPACE=$(terraform output -raw container_registry_namespace | tr -d '\n')
+        echo "resource_group=${RESOURCE_GROUP}" >> $GITHUB_OUTPUT
+        echo "namespace=${NAMESPACE}" >> $GITHUB_OUTPUT
 
     - name: Cleanup on Failure
       if: failure()
