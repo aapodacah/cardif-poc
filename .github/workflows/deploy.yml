@@ -15,23 +15,13 @@ jobs:
 
     - name: Install IBM Cloud CLI
       run: |
-        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh ###curl -fsSL https://clas.ibm.com/install/linux | sh
         ibmcloud plugin install container-registry
         ibmcloud plugin install code-engine
 
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v2
 
-    - name: Terraform Init
-      env:
-        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
-      run: terraform init
-    
-    - name: Terraform Destroy
-      env:
-        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
-      run: terraform destroy -auto-approve
-    
     - name: Terraform Init
       env:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
@@ -55,6 +45,14 @@ jobs:
       run: |
         echo "resource_group=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
         echo "namespace=$(terraform output -raw container_registry_namespace)" >> $GITHUB_OUTPUT
+
+    - name: Cleanup on Failure
+      if: failure()
+      env:
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
+      run: |
+        echo "Previous step failed, cleaning up resources..."
+        terraform destroy -auto-approve
 
     - name: Login to IBM Cloud
       run: |
