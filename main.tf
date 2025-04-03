@@ -30,7 +30,7 @@ variable "container_namespace" {
 }
 
 # Resource Group (referencia al existente)
-data "ibm_resource_group" "group" {
+resource "ibm_resource_group" "group" {
   name = var.resource_group
 }
 
