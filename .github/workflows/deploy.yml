@@ -27,7 +27,6 @@ jobs:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: terraform init
 
-###añadido manualmente
     - name: Terraform Plan
       env:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
