@@ -25,6 +25,13 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
+###añadido manualmente
+    - name: Terraform Plan
+      run: terraform plan
+
+    - name: Terraform Apply
+      run: terraform apply
+
     - name: Get Terraform Outputs
       id: terraform
       run: |
