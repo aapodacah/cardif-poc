@@ -1,14 +1,14 @@
 terraform {
   required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+    ibm = {
+      source  = "IBM-Cloud/ibm"
+      version = "~> 1.0"
     }
   }
 }
 
-provider "azurerm" {
-  features {}
+provider "ibm" {
+  region = "br-sao"  # Puedes cambiar esto según tu región preferida
 }
 
 variable "app_name" {
@@ -17,42 +17,67 @@ variable "app_name" {
   default     = "cardif-poc"
 }
 
-resource "azurerm_resource_group" "rg" {
-  name     = "${var.app_name}-RG"
-  location = "southcentralus"
+variable "resource_group" {
+  description = "IBM Cloud Resource Group name"
+  type        = string
+  default     = "cardif-poc-rg"
 }
 
-resource "azurerm_container_registry" "acr" {
-  name                = replace("${var.app_name}acr", "-", "")
-  resource_group_name = azurerm_resource_group.rg.name
-  location           = azurerm_resource_group.rg.location
-  sku                = "Basic"
-  admin_enabled      = true
+variable "container_namespace" {
+  description = "IBM Cloud Container Registry namespace"
+  type        = string
+  default     = "cardif-poc-namespace"
 }
 
-resource "azurerm_service_plan" "app_service_plan" {
-  name                = "${var.app_name}-service-plan"
-  resource_group_name = azurerm_resource_group.rg.name
-  location           = azurerm_resource_group.rg.location
-  os_type            = "Linux"
-  sku_name           = "B1"
+# Resource Group (referencia al existente)
+data "ibm_resource_group" "group" {
+  name = var.resource_group
 }
 
-resource "azurerm_linux_web_app" "app" {
-  name                = "${var.app_name}-app"
-  resource_group_name = azurerm_resource_group.rg.name
-  location           = azurerm_resource_group.rg.location
-  service_plan_id    = azurerm_service_plan.app_service_plan.id
+# Container Registry namespace
+resource "ibm_container_namespace" "namespace" {
+  name              = var.container_namespace
+  resource_group_id = data.ibm_resource_group.group.id
+}
 
-  site_config {
-    linux_fx_version = "DOCKER|${azurerm_container_registry.acr.login_server}/${var.app_name}:latest"
+# Code Engine Project
+resource "ibm_code_engine_project" "project" {
+  name              = "${var.app_name}-project"
+  resource_group_id = data.ibm_resource_group.group.id
+}
+
+# Code Engine App
+resource "ibm_code_engine_app" "app" {
+  project_id      = ibm_code_engine_project.project.id
+  name            = "${var.app_name}-app"
+  image_reference = "br.icr.io/${var.container_namespace}/${var.app_name}:latest"
+  image_port      = 8080
+  image_secret    = "registry-secret"  # Debes crear este secret manualmente en Code Engine
+
+  run_env_variables {
+    type  = "literal"
+    name  = "PORT"
+    value = "8080"
   }
 
-  identity {
-    type = "SystemAssigned"
+  run_scale {
+    min_scale = 1
+    max_scale = 1
   }
 }
 
-output "acr_login_server" {
-  value = azurerm_container_registry.acr.login_server
+output "container_registry_namespace" {
+  value = var.container_namespace
+}
+
+output "code_engine_project_name" {
+  value = ibm_code_engine_project.project.name
+}
+
+output "code_engine_app_name" {
+  value = ibm_code_engine_app.app.name
+}
+
+output "resource_group_name" {
+  value = var.resource_group
 }

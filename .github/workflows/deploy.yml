@@ -1,4 +1,4 @@
-name: Deploy to Azure
+name: Deploy to IBM Cloud
 
 on:
   push:
@@ -13,10 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Install IBM Cloud CLI
+      run: |
+        curl -fsSL https://clas.ibm.com/install/linux | sh
+        ibmcloud plugin install container-registry
+        ibmcloud plugin install code-engine
 
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v2
@@ -24,33 +25,34 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
-    - name: Terraform Plan
-      run: terraform plan
-
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/main'
-      run: terraform apply -auto-approve
-
-    - name: Get ACR Login Server
-      id: acr-server
+    - name: Get Terraform Outputs
+      id: terraform
       run: |
-        ACR_LOGIN_SERVER=$(terraform output -raw acr_login_server)
-        echo "::set-output name=server::$ACR_LOGIN_SERVER"
+        echo "resource_group=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
+        echo "namespace=$(terraform output -raw container_registry_namespace)" >> $GITHUB_OUTPUT
 
-    - name: Log in to Azure Container Registry
-      uses: azure/docker-login@v1
-      with:
-        login-server: ${{ steps.acr-server.outputs.server }}
-        username: ${{ secrets.ACR_USERNAME }}
-        password: ${{ secrets.ACR_PASSWORD }}
+    - name: Login to IBM Cloud
+      run: |
+        ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} --no-region
+        ibmcloud target -g ${{ steps.terraform.outputs.resource_group }}
 
     - name: Build and push Docker image
       run: |
-        docker build -t ${{ steps.acr-server.outputs.server }}/cardif-poc:latest .
-        docker push ${{ steps.acr-server.outputs.server }}/cardif-poc:latest
+        # Login to IBM Cloud Container Registry
+        ibmcloud cr login
+        # Build the image
+        docker build -t br.icr.io/${{ steps.terraform.outputs.namespace }}/cardif-poc:latest .
+        # Push the image
+        docker push br.icr.io/${{ steps.terraform.outputs.namespace }}/cardif-poc:latest
 
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: 'cardif-poc-app'
-        images: '${{ steps.acr-server.outputs.server }}/cardif-poc:latest'
+    - name: Deploy to IBM Cloud Code Engine
+      run: |
+        # Create or update the Code Engine application
+        ibmcloud ce application create \
+          --name cardif-poc-app \
+          --image br.icr.io/${{ steps.terraform.outputs.namespace }}/cardif-poc:latest \
+          --registry-secret ${{ secrets.IBM_CLOUD_REGISTRY_SECRET }} \
+          --env-from-secret ${{ secrets.IBM_CLOUD_APP_SECRET }} \
+          --min-scale 1 \
+          --max-scale 1 \
+          --port 8080
