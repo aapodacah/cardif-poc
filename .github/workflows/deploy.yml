@@ -61,12 +61,23 @@ jobs:
         docker push br.icr.io/cardif-poc-namespace/cardif-poc:latest
 
     - name: Deploy to IBM Cloud Code Engine
+      timeout-minutes: 3
       run: |
         # Create or update the Code Engine application
         ibmcloud ce project select -n cardif-poc-project
+        ibmcloud ce registry create --name cardif-poc-registry --server br.icr.io --username iamapikey --password ${{ secrets.IBM_CLOUD_API_KEY }}
         ibmcloud ce application create \
           --name cardif-poc-app \
           --image br.icr.io/cardif-poc-namespace/cardif-poc:latest \
+          --registry-secret ${{ secrets.IBM_CLOUD_REGISTRY_SECRET }} \
           --min-scale 1 \
           --max-scale 3 \
           --port 8080
+
+    - name: Cleanup on Failure
+      if: failure()
+      env:
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
+      run: |
+        echo "Previous step failed, cleaning up resources..."
+        terraform destroy -auto-approve
