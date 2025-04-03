@@ -15,7 +15,7 @@ jobs:
 
     - name: Install IBM Cloud CLI
       run: |
-        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh ###curl -fsSL https://clas.ibm.com/install/linux | sh
         ibmcloud plugin install container-registry
         ibmcloud plugin install code-engine
 
@@ -27,6 +27,7 @@ jobs:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: terraform init
 
+###añadido manualmente
     - name: Terraform Plan
       env:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
@@ -42,12 +43,25 @@ jobs:
       env:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: |
-        RESOURCE_GROUP=$(terraform output -raw resource_group_name | tr -d '\n')
-        NAMESPACE=$(terraform output -raw container_registry_namespace | tr -d '\n')
-        PROJECT_NAME=$(terraform output -raw code_engine_project_name | tr -d '\n')
-        echo "RESOURCE_GROUP=${RESOURCE_GROUP}" >> $GITHUB_ENV
-        echo "NAMESPACE=${NAMESPACE}" >> $GITHUB_ENV
-        echo "PROJECT_NAME=${PROJECT_NAME}" >> $GITHUB_ENV
+        # Get raw outputs from Terraform
+        RESOURCE_GROUP=$(terraform output -raw resource_group_name)
+        NAMESPACE=$(terraform output -raw container_registry_namespace)
+        PROJECT_NAME=$(terraform output -raw code_engine_project_name)
+        
+        # Remove any newlines or special characters
+        RESOURCE_GROUP=$(echo "$RESOURCE_GROUP" | tr -d '\n' | tr -d '\r')
+        NAMESPACE=$(echo "$NAMESPACE" | tr -d '\n' | tr -d '\r')
+        PROJECT_NAME=$(echo "$PROJECT_NAME" | tr -d '\n' | tr -d '\r')
+        
+        # Debug: Print the values
+        echo "Resource Group: $RESOURCE_GROUP"
+        echo "Namespace: $NAMESPACE"
+        echo "Project Name: $PROJECT_NAME"
+        
+        # Set environment variables
+        echo "RESOURCE_GROUP=$RESOURCE_GROUP" >> $GITHUB_ENV
+        echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
+        echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
 
     - name: Cleanup on Failure
       if: failure()
@@ -59,24 +73,29 @@ jobs:
 
     - name: Login to IBM Cloud
       run: |
+        # Debug: Print environment variables
+        echo "Using Resource Group: $RESOURCE_GROUP"
+        echo "Using Namespace: $NAMESPACE"
+        echo "Using Project Name: $PROJECT_NAME"
+        
         ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} --no-region
-        ibmcloud target -g ${{ env.RESOURCE_GROUP }}
+        ibmcloud target -g $RESOURCE_GROUP -r br-sao
 
     - name: Build and push Docker image
       run: |
         # Login to IBM Cloud Container Registry
         ibmcloud cr login
         # Build the image
-        docker build -t br.icr.io/${{ env.NAMESPACE }}/cardif-poc:latest .
+        docker build -t br.icr.io/$NAMESPACE/cardif-poc:latest .
         # Push the image
-        docker push br.icr.io/${{ env.NAMESPACE }}/cardif-poc:latest
+        docker push br.icr.io/$NAMESPACE/cardif-poc:latest
 
     - name: Deploy to IBM Cloud Code Engine
       run: |
         # Create or update the Code Engine application
         ibmcloud ce application create \
           --name cardif-poc-app \
-          --image br.icr.io/${{ env.NAMESPACE }}/cardif-poc:latest \
+          --image br.icr.io/$NAMESPACE/cardif-poc:latest \
           --registry-secret ${{ secrets.IBM_CLOUD_REGISTRY_SECRET }} \
           --env-from-secret ${{ secrets.IBM_CLOUD_APP_SECRET }} \
           --min-scale 1 \
