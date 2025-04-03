@@ -26,6 +26,16 @@ jobs:
       env:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: terraform init
+    
+    - name: Terraform Destroy
+      env:
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
+      run: terraform destroy -auto-approve
+    
+    - name: Terraform Init
+      env:
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
+      run: terraform init
 
 ###añadido manualmente
     - name: Terraform Plan
