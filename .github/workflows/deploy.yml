@@ -1,0 +1,69 @@
+name: Deploy to IBM Cloud
+
+on:
+  push:
+    branches:
+      - poc
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install IBM Cloud CLI
+        run: |
+          curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+          ibmcloud --version
+
+      - name: Configure IBM Cloud CLI
+        run: |
+          ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} -g apodaca-poc-resource-group -r br-sao
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.0.0"
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          TF_VAR_ibmcloud_api_key: ${{ secrets.IBM_CLOUD_API_KEY }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        env:
+          TF_VAR_ibmcloud_api_key: ${{ secrets.IBM_CLOUD_API_KEY }}
+
+      - name: Build and Push Docker Image
+        run: |
+          ibmcloud cr login
+          docker build -t apodaca-poc-app .
+          docker tag apodaca-poc-app:latest us.icr.io/apodaca-poc-registry/apodaca-poc-app:latest
+          docker push us.icr.io/apodaca-poc-registry/apodaca-poc-app:latest
+
+      - name: Deploy to Code Engine
+        run: |
+          # Check if project exists
+          if ! ibmcloud ce project get --name apodaca-poc-project; then
+            ibmcloud ce project create --name apodaca-poc-project
+          fi
+          
+          # Select the project
+          ibmcloud ce project select --name apodaca-poc-project
+          
+          # Create registry secret
+          ibmcloud ce registry create --name apodaca-poc-registry-secret \
+            --server us.icr.io \
+            --username iamapikey \
+            --password ${{ secrets.IBM_CLOUD_API_KEY }}
+          
+          # Deploy the application
+          ibmcloud ce app create --name apodaca-poc-app \
+            --image us.icr.io/apodaca-poc-registry/apodaca-poc-app:latest \
+            --cpu 0.5 \
+            --memory 1g \
+            --port 5000 \
+            --min-scale 1 \
+            --max-scale 2 \
+            --registry-secret apodaca-poc-registry-secret 
