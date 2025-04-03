@@ -49,7 +49,7 @@ resource "ibm_code_engine_project" "project" {
 }
 
 output "container_registry_namespace" {
-  value = var.container_namespace
+  value = ibm_cr_namespace.namespace.name
 }
 
 output "code_engine_project_name" {
@@ -57,5 +57,5 @@ output "code_engine_project_name" {
 }
 
 output "resource_group_name" {
-  value = var.resource_group
+  value = ibm_resource_group.group.name
 }
