@@ -37,13 +37,15 @@ resource "ibm_resource_group" "group" {
 # Container Registry namespace
 resource "ibm_cr_namespace" "namespace" {
   name              = var.container_namespace
-  resource_group_id = data.ibm_resource_group.group.id
+  resource_group_id = ibm_resource_group.group.id
+  depends_on        = [ibm_resource_group.group]
 }
 
 # Code Engine Project
 resource "ibm_code_engine_project" "project" {
   name              = "${var.app_name}-project"
   resource_group_id = data.ibm_resource_group.group.id
+  depends_on        = [ibm_cr_namespace.namespace]
 }
 
 output "container_registry_namespace" {
