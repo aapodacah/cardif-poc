@@ -23,17 +23,25 @@ jobs:
       uses: hashicorp/setup-terraform@v2
 
     - name: Terraform Init
+      env:
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: terraform init
 
+###añadido manualmente
     - name: Terraform Plan
+      env:
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: terraform plan -out=tfplan
 
     - name: Terraform Apply
-      if: github.ref == 'refs/heads/dev'
-      run: terraform apply -auto-approve tfplan
+      env:
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
+      run: terraform apply -auto-approve
 
     - name: Get Terraform Outputs
       id: terraform
+      env:
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: |
         echo "resource_group=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
         echo "namespace=$(terraform output -raw container_registry_namespace)" >> $GITHUB_OUTPUT
