@@ -15,7 +15,7 @@ jobs:
 
     - name: Install IBM Cloud CLI
       run: |
-        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh ###curl -fsSL https://clas.ibm.com/install/linux | sh
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
         ibmcloud plugin install container-registry
         ibmcloud plugin install code-engine
 
@@ -25,12 +25,12 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
-###añadido manualmente
     - name: Terraform Plan
-      run: terraform plan
+      run: terraform plan -out=tfplan
 
     - name: Terraform Apply
-      run: terraform apply
+      if: github.ref == 'refs/heads/dev'
+      run: terraform apply -auto-approve tfplan
 
     - name: Get Terraform Outputs
       id: terraform
