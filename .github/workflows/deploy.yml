@@ -63,8 +63,8 @@ jobs:
     - name: Deploy to IBM Cloud Code Engine
       run: |
         # Create or update the Code Engine application
+        ibmcloud ce project select -n cardif-poc-project
         ibmcloud ce application create \
-          --project-name cardif-poc-project \
           --name cardif-poc-app \
           --image br.icr.io/cardif-poc-namespace/cardif-poc:latest \
           --min-scale 1 \
