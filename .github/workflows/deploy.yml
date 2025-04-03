@@ -64,10 +64,9 @@ jobs:
       run: |
         # Create or update the Code Engine application
         ibmcloud ce application create \
+          --project-name cardif-poc-project \
           --name cardif-poc-app \
           --image br.icr.io/cardif-poc-namespace/cardif-poc:latest \
-          --registry-secret ${{ secrets.IBM_CLOUD_REGISTRY_SECRET }} \
-          --env-from-secret ${{ secrets.IBM_CLOUD_APP_SECRET }} \
           --min-scale 1 \
-          --max-scale 1 \
+          --max-scale 3 \
           --port 8080
