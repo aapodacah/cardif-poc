@@ -1,0 +1,22 @@
+I need the following configuration:
+- basic 'hello world'python web app with flask exposed on port 5000
+- Dockerfile to contenerize this python web app
+- Terraform code to create the infrastructure in IBM Cloud in sao paulo region: resource group, code engine project, container registry. The prefix of the names must be apodaca-poc- followed by the type of resource
+- The workflow file of github actions with the next configuration:
+  - triggered on branch poc
+  - install ibmcloud cli from the url with prefix clis 
+  - deploy the infrastructure via Terraform using the credentials of the user stored in the repository secrets.
+  - login to ibm cloud using the secret stored in repository secrets on resource group already created and region brazil sao paulo.
+  - build the docker images and push it to the container registry
+  - validate if the project in code engine exists, if not, create it
+  - select the code engine project created via Terraform
+  - create registry secret usgin the credentials in repository secrets.
+  - deploy the app to code engine using the image stored in the container registry
+    - cpu .5
+    - memory 1g 
+    - port 5000 
+    - min 1 instance 
+    - max 2 instances 
+    - use the secret to connect to the container registry
+    - use the image stored in the container registry 
+    - use the app name apodaca-poc-app
