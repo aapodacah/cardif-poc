@@ -15,7 +15,7 @@ jobs:
 
     - name: Install IBM Cloud CLI
       run: |
-        curl -fsSL https://clas.ibm.com/install/linux | sh
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh ###curl -fsSL https://clas.ibm.com/install/linux | sh
         ibmcloud plugin install container-registry
         ibmcloud plugin install code-engine
 
