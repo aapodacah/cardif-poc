@@ -43,6 +43,14 @@ jobs:
         ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} --no-region
         ibmcloud target -g cardif-poc-rg -r br-sao
 
+    - name: Cleanup on Failure
+      if: failure()
+      env:
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
+      run: |
+        echo "Previous step failed, cleaning up resources..."
+        terraform destroy -auto-approve
+
     - name: Build and push Docker image
       run: |
         # Login to IBM Cloud Container Registry
