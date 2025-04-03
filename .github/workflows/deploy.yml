@@ -15,7 +15,7 @@ jobs:
 
     - name: Install IBM Cloud CLI
       run: |
-        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh ###curl -fsSL https://clas.ibm.com/install/linux | sh
         ibmcloud plugin install container-registry
         ibmcloud plugin install code-engine
 
@@ -27,6 +27,7 @@ jobs:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
       run: terraform init
 
+###añadido manualmente
     - name: Terraform Plan
       env:
         IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
@@ -58,23 +59,23 @@ jobs:
     - name: Login to IBM Cloud
       run: |
         ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} --no-region
-        ibmcloud target -g ${{ steps.terraform.outputs.resource_group }}
+        ibmcloud target -g ${{ steps.terraform.outputs.RESOURCE_GROUP }}
 
     - name: Build and push Docker image
       run: |
         # Login to IBM Cloud Container Registry
         ibmcloud cr login
         # Build the image
-        docker build -t br.icr.io/${{ steps.terraform.outputs.namespace }}/cardif-poc:latest .
+        docker build -t br.icr.io/${{ steps.terraform.outputs.NAMESPACE }}/cardif-poc:latest .
         # Push the image
-        docker push br.icr.io/${{ steps.terraform.outputs.namespace }}/cardif-poc:latest
+        docker push br.icr.io/${{ steps.terraform.outputs.NAMESPACE }}/cardif-poc:latest
 
     - name: Deploy to IBM Cloud Code Engine
       run: |
         # Create or update the Code Engine application
         ibmcloud ce application create \
           --name cardif-poc-app \
-          --image br.icr.io/${{ steps.terraform.outputs.namespace }}/cardif-poc:latest \
+          --image br.icr.io/${{ steps.terraform.outputs.NAMESPACE }}/cardif-poc:latest \
           --registry-secret ${{ secrets.IBM_CLOUD_REGISTRY_SECRET }} \
           --env-from-secret ${{ secrets.IBM_CLOUD_APP_SECRET }} \
           --min-scale 1 \
